@@ -1,0 +1,7 @@
+title: Support Poetry integration
+category: added
+author: ChenqiShan <chenqishan337@gmail.com>
+issue: #2
+notes: >
+    Add the poetry.lock and pyproject.toml to
+    support Poetry.
