@@ -18,7 +18,7 @@
 #
 # Authors:
 #     Willem Jiang <willem.jiang@gmail.com>
-#     Yehu Wang <yehui.wang.mdh@gmail.com>
+#     Yehui Wang <yehui.wang.mdh@gmail.com>
 #     Chenqi Shan <chenqishan337@gmail.com>
 #     Fugang Xiao <xiao623@outlook.com>
 
@@ -66,7 +66,7 @@ setup(
     version="0.1.0",
     description="Bundle of Perceval backends for Gitee",
     license="GPLV3",
-    author="Willem Jiang, Yehu Wang, Chenqi Shan",
+    author="Willem Jiang, Yehui Wang, Chenqi Shan",
     author_email="willem.jiang@gmail.com, yehui.wang.mdh@gmail.com, chenqishan337@gmail.com",
 
     long_description=long_description,
