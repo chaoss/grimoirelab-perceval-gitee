@@ -341,6 +341,7 @@ class Gitee(Backend):
                         pull['merged_by'] = self.__get_pull_merged_by(pull['number'])
                         if pull['merged_by']:
                             pull['merged_by_data'] = self.__get_user(pull['merged_by'])
+                        pull['linked_issues'] = self.__get_pull_linked_issues(pull['number'])
                 yield pull
 
     def __fetch_repo_info(self):
@@ -348,6 +349,15 @@ class Gitee(Backend):
 
         raw_repo = self.client.repo()
         repo = json.loads(raw_repo)
+
+        repo_releases_groups = self.client.repo_releases()
+        repo_releases = []
+        for raw_releases in repo_releases_groups:
+            releases = json.loads(raw_releases)
+            for release in releases:
+               repo_releases.append(release) 
+            
+        repo['releases'] = repo_releases
 
         fetched_on = datetime_utcnow()
         repo['fetched_on'] = fetched_on.timestamp()
@@ -377,6 +387,25 @@ class Gitee(Backend):
             collaborators.append(self.__get_user(ra['login']))
 
         return collaborators
+
+    def __get_pull_linked_issues(self, pr_number):
+        issues = []
+        try:
+            group_linked_issues = self.client.pull_linked_issues(pr_number)
+
+            for raw_linked_issues in group_linked_issues:
+
+                for issue in json.loads(raw_linked_issues):
+                    issue_url = issue['html_url']
+                    issues.append(issue_url)
+
+        except requests.exceptions.HTTPError as error:
+            # 404 not found is wrongly received from gitee API service
+            if error.response.status_code == 404:
+                logger.error("Can't get gitee pull request linked issues with PR number %s", pr_number)
+            else:
+                raise error
+        return issues
 
     def __get_pull_merged_by(self, pr_number):
         group_raw_action_logs = self.client.pull_action_logs(pr_number)
@@ -500,6 +529,7 @@ class Gitee(Backend):
         pull['reviews_data'] = []
         pull['merged_by_data'] = []
         pull['commits_data'] = []
+    
 
 
 class GiteeClient(HttpClient, RateLimitHandler):
@@ -617,11 +647,23 @@ class GiteeClient(HttpClient, RateLimitHandler):
         """Get repository data"""
 
         path = urijoin(self.base_url, 'repos', self.owner, self.repository)
-
+    
         r = self.fetch(path)
         repo = r.text
 
         return repo
+
+    def repo_releases(self):
+        """Get repository releases data"""
+
+        payload = {
+            'per_page': PER_PAGE,
+            'direction': 'desc'
+        }
+
+        path = urijoin('releases')
+    
+        return self.fetch_items(path, payload)
 
     def pull_action_logs(self, pr_number):
         """Get pull request action logs"""
@@ -651,6 +693,16 @@ class GiteeClient(HttpClient, RateLimitHandler):
 
         comments_url = urijoin("pulls", str(pr_number), "comments")
         return self.fetch_items(comments_url, payload)
+    
+    def pull_linked_issues(self, pr_number):
+        """Get pull request linked issues"""
+
+        payload = {
+            'per_page': PER_PAGE,
+        }
+
+        commit_url = urijoin("pulls", str(pr_number), "issues")
+        return self.fetch_items(commit_url, payload)
 
     def user(self, login):
         """Get the user information and update the user cache"""
